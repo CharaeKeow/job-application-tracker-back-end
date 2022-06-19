@@ -3,35 +3,82 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
 }
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-}
-
-model Post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  title     String   @db.VarChar(255)
-  content   String?
-  published Boolean  @default(false)
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-}
-
-model Profile {
-  id     Int     @id @default(autoincrement())
-  bio    String?
-  user   User    @relation(fields: [userId], references: [id])
-  userId Int     @unique
+  referentialIntegrity = "prisma"
 }
 
 model User {
-  id      Int      @id @default(autoincrement())
-  email   String   @unique
-  name    String?
-  posts   Post[]
-  profile Profile?
+  id        Int      @id @default(autoincrement())
+  email     String?
+  name      String?
+  educations  Education[]
+  experiences  Experience[]
+  resume    String?  // store URL link of resume hosted elsewhere. Or should I create a separate table?
+  jobApplications JobApplication[] // a user can apply to many job
+}
+
+model JobApplication {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  status      String
+  dateApplied DateTime  @db.Date
+  salary      String?
+  remarks     String?   @db.Text
+  link        String?
+  platform    String?   //can parse from link later on
+  company     Company[]
+  User        User     @relation(fields: [userId], references: [id])
+  userId      Int
+
+  @@index(userId)
+}
+
+model Company {
+  id  Int   @id @default(autoincrement())
+  title String 
+  description String?  @db.Text
+  website String?
+  JobApplication JobApplication @relation(fields: [jobApplicationId], references: [id])
+  jobApplicationId  Int
+
+  @@index(jobApplicationId)
+}
+
+model Education {
+  id          Int       @id @default(autoincrement())
+  school      String
+  degree      String
+  field       String
+  startDate   DateTime  @db.Date
+  endDate     DateTime?  @db.Date
+  grade       String?
+  description String?   @db.Text
+  User        User?      @relation(fields: [userId], references: [id]) //Foreign key
+  userId      Int?
+  isCurrent   Boolean?
+  
+  @@index(userId)
+}
+
+model Experience {
+  id              Int @id @default(autoincrement())
+  title           String
+  employmentType  String
+  companyName     String
+  location        String?
+  startDate       DateTime  @db.Date
+  endDate         DateTime?  @db.Date
+  industry        String?
+  description     String? @db.Text
+  isCurrent       Boolean? //currently working here, hence no endDate
+  User            User  @relation(fields: [userId], references: [id]) // FK
+  userId          Int
+
+  @@index(userId)
 }
